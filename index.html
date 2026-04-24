@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Career Day — What Do People Think?</title>
+<style>
+  :root {
+    /* ---- Palette (edit these to re-skin the whole app) ---- */
+    --c1: #1f5dd6;           /* deep blue — primary */
+    --c2: #ec6a1a;           /* warm orange */
+    --c3: #2ba362;           /* leafy green */
+    --c4: #c23f8d;           /* magenta */
+    --c-gray: #d4cfc7;       /* warm soft gray — unshaded icons */
+    --c-text: #1a1a1a;
+    --c-muted: #6b6b6b;
+    --c-bg: #fafaf7;
+    --c-card-bg: #ffffff;
+    --c-border: #e4e0d9;
+    --c-accent: #1f5dd6;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--c-bg);
+    color: var(--c-text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  html {
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+    scroll-padding-top: 44px;
+  }
+  html:has(body.presenting) { scroll-padding-top: 0; }
+
+  body {
+    min-height: 100vh;
+  }
+
+  /* ---- Header (operator toolbar; hidden in presentation mode) ---- */
+  header.app-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--c-border);
+    z-index: 100;
+    font-size: 13px;
+  }
+  header.app-header .title {
+    color: var(--c-muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  header.app-header .hint {
+    color: var(--c-muted);
+    font-size: 12px;
+  }
+  header.app-header button {
+    background: white;
+    border: 1px solid var(--c-border);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--c-text);
+  }
+  header.app-header button:hover { background: #f1ede7; }
+
+  body.presenting header.app-header { display: none; }
+
+  /* ---- Card (one per question) ---- */
+  main { padding-top: 44px; }
+  body.presenting main { padding-top: 0; }
+
+  section.card {
+    min-height: calc(100vh - 44px);
+    scroll-snap-align: start;
+    padding: 24px clamp(16px, 3vw, 48px) 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    border-bottom: 1px solid var(--c-border);
+    background: var(--c-card-bg);
+  }
+  body.presenting section.card {
+    min-height: 100vh;
+    padding: clamp(16px, 3vh, 32px) clamp(16px, 3vw, 48px);
+  }
+
+  .card h2.question {
+    margin: 0;
+    text-align: center;
+    font-size: clamp(28px, 5vw, 64px);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+  }
+
+  .card .grids-row {
+    display: flex;
+    justify-content: center;
+    gap: clamp(12px, 2.5vw, 36px);
+    flex: 1 1 auto;
+    min-height: 0;
+    align-items: stretch;
+  }
+  .slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  /* Constrained mode keeps a tighter max-width per slot so the single grid
+     doesn't sprawl; unconstrained small-multiples want the full width. */
+  .slot.single-grid { max-width: 600px; }
+  .slot-label {
+    font-size: clamp(16px, 2vw, 24px);
+    font-weight: 600;
+    color: var(--c-muted);
+    text-align: center;
+  }
+
+  /* ---- Icon grid ---- */
+  .grid-wrap {
+    flex: 0 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+    width: 100%;
+  }
+  .grid {
+    display: grid;
+    gap: clamp(1px, 0.3vw, 4px);
+    width: min(100%, 52vh);
+    aspect-ratio: var(--aspect, 1 / 1);
+    container-type: inline-size;
+  }
+  /* Tall-aspect grids (vertical bars) — size by height instead of width
+     so they don't overflow, and lock to a viewport-based height so they
+     don't collapse when the parent height is indeterminate. */
+  .grid.tall,
+  .mini .grid.tall {
+    width: auto;
+    height: 55vh;
+    max-height: 55vh;
+    max-width: 100%;
+    margin: 0 auto;
+  }
+  .cell {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  /* Unfilled cells: faint circle placeholder keeps the grid structure
+     visible without competing with the filled emojis. */
+  .cell::before {
+    content: '';
+    width: 22%;
+    height: 22%;
+    border-radius: 50%;
+    background: var(--c-gray);
+    opacity: 0.45;
+    display: block;
+  }
+  .cell[data-color="0"]::before,
+  .cell[data-color="1"]::before,
+  .cell[data-color="2"]::before,
+  .cell[data-color="3"]::before { display: none; }
+  /* Filled cells show the choice's emoji. Each cell pre-renders all
+     possible emoji children; data-color controls which is visible. */
+  .cell > span { display: none; }
+  .cell[data-color="0"] > .emoji-0,
+  .cell[data-color="1"] > .emoji-1,
+  .cell[data-color="2"] > .emoji-2,
+  .cell[data-color="3"] > .emoji-3 { display: flex; }
+  .cell > span {
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    /* Sized to ~75% of a cell; grid sets --cols so this scales whether
+       the grid is 10 cols wide or 5. */
+    font-size: calc(75cqi / var(--cols, 10));
+  }
+
+  /* Small-multiples (unconstrained mode): multiple mini grids stacked */
+  .multi-slot {
+    display: grid;
+    gap: clamp(8px, 1.2vw, 16px);
+    width: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  .multi-slot[data-choices="2"] { grid-template-columns: repeat(2, 1fr); }
+  .multi-slot[data-choices="3"] { grid-template-columns: repeat(3, 1fr); }
+  .multi-slot[data-choices="4"] { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); }
+  /* When the card uses a wide-aspect grid (e.g., 1x10 "strips") the
+     minis stack vertically instead of sitting side-by-side, so each
+     strip gets the full slot width. */
+  .multi-slot.stacked[data-choices="2"] { grid-template-columns: 1fr; grid-template-rows: repeat(2, auto); }
+  .multi-slot.stacked[data-choices="3"] { grid-template-columns: 1fr; grid-template-rows: repeat(3, auto); }
+  .multi-slot.stacked[data-choices="4"] { grid-template-columns: 1fr; grid-template-rows: repeat(4, auto); }
+  .mini {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-height: 0;
+    min-width: 0;
+  }
+  .mini-label {
+    font-size: clamp(12px, 1.4vw, 18px);
+    font-weight: 600;
+    color: var(--c-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+  .mini .grid {
+    width: 100%;
+    height: auto;
+    max-height: 100%;
+  }
+
+  /* ---- Operator controls (hidden in presentation mode) ---- */
+  .controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 16px;
+    background: #faf8f4;
+    border: 1px solid var(--c-border);
+    border-radius: 10px;
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  body.presenting .controls { display: none; }
+
+  .controls-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+    align-items: center;
+    font-size: 13px;
+  }
+  .controls-row > span.lbl {
+    color: var(--c-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 11px;
+    font-weight: 600;
+    min-width: 60px;
+  }
+  .pill {
+    background: white;
+    border: 1px solid var(--c-border);
+    border-radius: 999px;
+    padding: 4px 12px;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--c-text);
+    user-select: none;
+  }
+  .pill[aria-pressed="true"] {
+    background: var(--c-accent);
+    color: white;
+    border-color: var(--c-accent);
+  }
+  .pill.lock[aria-pressed="true"] {
+    background: #2b2b2b;
+    border-color: #2b2b2b;
+  }
+  .check-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: white;
+    border: 1px solid var(--c-border);
+    border-radius: 999px;
+    padding: 4px 10px;
+    cursor: pointer;
+    font-size: 12px;
+    user-select: none;
+  }
+  .check-pill input { margin: 0; }
+
+  .sliders {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 6px 14px;
+    align-items: center;
+  }
+  .slider-row {
+    display: contents;
+  }
+  .slider-row .choice-label {
+    font-size: 15px;
+    font-weight: 500;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .slider-row .choice-label .swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    display: inline-block;
+  }
+  .slider-row input[type="range"] {
+    width: 100%;
+    accent-color: var(--c-accent);
+  }
+
+  /* ---- Presentation-mode layout tweaks ---- */
+  body.presenting .card { gap: clamp(8px, 2vh, 24px); }
+  body.presenting .card h2.question { font-size: clamp(32px, 6vw, 84px); }
+  body.presenting .slot-label { font-size: clamp(18px, 2.4vw, 32px); }
+  body.presenting .grid { width: min(100%, 62vh); }
+
+  /* ---- Intro card ---- */
+  section.card.intro-card {
+    justify-content: center;
+    align-items: center;
+    gap: clamp(20px, 4vh, 48px);
+  }
+  .intro-top {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(24px, 5vw, 72px);
+    flex-wrap: wrap;
+  }
+  .intro-photo {
+    width: clamp(180px, 28vh, 340px);
+    aspect-ratio: 1 / 1;
+    border-radius: 50%;
+    object-fit: cover;
+    object-position: 50% 18%;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+    background: var(--c-gray);
+  }
+  .intro-text { text-align: left; }
+  .intro-hello {
+    font-size: clamp(18px, 2vw, 28px);
+    color: var(--c-muted);
+    letter-spacing: 0.02em;
+    margin: 0 0 6px;
+  }
+  .intro-name {
+    font-size: clamp(40px, 6vw, 88px);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    margin: 0;
+  }
+  .intro-title {
+    font-size: clamp(22px, 2.8vw, 40px);
+    color: var(--c-accent);
+    font-weight: 700;
+    margin: 10px 0 0;
+  }
+
+  /* ---- Math decor strip (intro card) ----
+     Classic chalkboard-ish mix of Greek letters, operators, and symbols.
+     Each element is sized, tinted, and rotated individually via inline style. */
+  .math-decor {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: clamp(14px, 2.4vw, 44px);
+    padding: clamp(8px, 2vh, 20px) clamp(12px, 3vw, 48px);
+    font-family: "Times New Roman", Georgia, serif;
+    font-weight: 700;
+    font-style: italic;
+    line-height: 1;
+    user-select: none;
+  }
+  .math-decor-item {
+    display: inline-block;
+    line-height: 1;
+    transition: transform 260ms ease;
+  }
+  .math-decor-item:hover { transform: rotate(0deg) scale(1.08) !important; }
+
+  /* ---- Palette-legend swatch (for sliders/labels) ---- */
+  .sw-0 { background: var(--c1); }
+  .sw-1 { background: var(--c2); }
+  .sw-2 { background: var(--c3); }
+  .sw-3 { background: var(--c4); }
+
+  /* Visually-hidden utility */
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+</style>
+</head>
+<body>
+  <header class="app-header">
+    <span class="title">Career Day · Operator</span>
+    <span class="hint">P = presentation · F11 = fullscreen · Space / PgDn = next card · G = toggle grown-ups</span>
+    <button id="reset-all" title="Clear all sliders on all cards">Reset All</button>
+  </header>
+  <main id="cards"></main>
+
+<script>
+/* ============================================================
+   CONFIG — edit freely. These are the knobs Joey cares about.
+   ============================================================ */
+
+const CONFIG = {
+  gridRows: 10,
+  gridCols: 10,
+};
+
+/*
+  PRESETS — one entry per question card.
+
+  Fields:
+    id:          unique slug
+    question:    string shown huge at the top
+    choices:     [{label, emoji, colorIndex}]
+    constrainTo100Default:
+                 true  => single combined grid, sliders rescale to sum = 100
+                 false => small-multiples (one grid per choice), sliders independent
+                          (use this for select-all questions like "do you have a dog? a cat?")
+    grownupsData: numbers per choice (same length as choices). PLACEHOLDERS for now.
+                  For constrained cards, these should sum to ~100.
+                  For unconstrained cards, each is its own 0-100 percentage.
+    gridRows / gridCols: optional per-card override (default 10x10)
+*/
+const PRESETS = [
+  {
+    id: 'ice-cream',
+    question: "What's your favorite ice cream?",
+    choices: [
+      { label: 'Chocolate',      emoji: '🍫', colorIndex: 0 },
+      { label: 'Vanilla',        emoji: '🍦', colorIndex: 1 },
+      { label: 'Strawberry',     emoji: '🍓', colorIndex: 2 },
+      { label: 'Something else', emoji: '⭐', colorIndex: 3 },
+    ],
+    constrainTo100Default: true,
+    grownupsData: [28, 38, 20, 14], // PLACEHOLDER — replace with real data
+  },
+  {
+    id: 'pets',
+    question: "Do you have a pet?",
+    choices: [
+      { label: 'Dog',         emoji: '🐕', colorIndex: 0 },
+      { label: 'Cat',         emoji: '🐈', colorIndex: 1 },
+      { label: 'Fish',        emoji: '🐠', colorIndex: 2 },
+    ],
+    // Select-all-that-apply: kids can have both a dog and a cat.
+    constrainTo100Default: false,
+    // Source: American Veterinary Medical Association — share of U.S. households owning each pet.
+    grownupsData: [43, 33, 3],
+    // Each mini is a 20x1 vertical bar (each cell = 5%), so 6 of them
+    // (3 choices × 2 slots) fit on screen without overlapping, and the
+    // 3% fish share still registers as one fish.
+    gridRows: 20,
+    gridCols: 1,
+  },
+  {
+    id: 'superpower',
+    question: "Which superpower would you pick?",
+    choices: [
+      { label: 'Fly',          emoji: '🦅', colorIndex: 0 },
+      { label: 'Invisible',    emoji: '👻', colorIndex: 1 },
+      { label: 'Super strong', emoji: '💪', colorIndex: 2 },
+      { label: 'Read minds',   emoji: '🧠', colorIndex: 3 },
+    ],
+    constrainTo100Default: true,
+    grownupsData: [35, 28, 12, 25], // PLACEHOLDER
+  },
+  {
+    id: 'would-you-rather',
+    question: "Would you rather have a pet dragon or a pet unicorn?",
+    choices: [
+      { label: 'Pet dragon',  emoji: '🐉', colorIndex: 0 },
+      { label: 'Pet unicorn', emoji: '🦄', colorIndex: 1 },
+    ],
+    constrainTo100Default: true,
+    grownupsData: [55, 45], // PLACEHOLDER
+  },
+];
+
+/* ============================================================
+   STATE — one entry per card, keyed by preset id.
+   ============================================================ */
+
+const state = {};
+
+function makeInitialState(preset) {
+  const n = preset.choices.length;
+  const zeros = new Array(n).fill(0);
+  const grownups = (preset.grownupsData || zeros).slice(0, n);
+  while (grownups.length < n) grownups.push(0);
+  return {
+    activeSlot: 'actual',
+    visibleSlots: ['actual'],
+    constrainTo100: !!preset.constrainTo100Default,
+    values: {
+      guess:    zeros.slice(),
+      actual:   zeros.slice(),
+      grownups: grownups.slice(),
+    },
+  };
+}
+
+function resetAllState() {
+  for (const p of PRESETS) {
+    const s = state[p.id];
+    const n = p.choices.length;
+    s.values.guess = new Array(n).fill(0);
+    s.values.actual = new Array(n).fill(0);
+    // Keep grownups as the preset's data — that's reference data, not kid-entered.
+    s.visibleSlots = ['actual'];
+    s.activeSlot = 'actual';
+  }
+}
+
+/* ============================================================
+   CELL ALLOCATION — translate values into per-cell color indices.
+   ============================================================ */
+
+/**
+ * Constrained mode: distribute `totalCells` among choices using largest
+ * remainder so the sum of allocations is exactly totalCells.
+ * Returns an array of length totalCells with choice indices (or -1 for gray).
+ */
+function allocateConstrained(values, totalCells) {
+  const sum = values.reduce((a, b) => a + b, 0);
+  if (sum <= 0) return new Array(totalCells).fill(-1);
+  const raw = values.map(v => (v / sum) * totalCells);
+  const floors = raw.map(r => Math.floor(r));
+  const remainders = raw.map((r, i) => ({ i, frac: r - Math.floor(r) }));
+  let used = floors.reduce((a, b) => a + b, 0);
+  let remaining = totalCells - used;
+  remainders.sort((a, b) => b.frac - a.frac);
+  for (let k = 0; k < remaining; k++) floors[remainders[k].i]++;
+  const cells = [];
+  for (let i = 0; i < floors.length; i++) {
+    for (let k = 0; k < floors[i]; k++) cells.push(i);
+  }
+  return cells;
+}
+
+/**
+ * Unconstrained mode per-choice: paint Math.round(value/100 * totalCells)
+ * cells with this choice's color, rest gray.
+ */
+function allocateSingle(value, choiceIndex, totalCells) {
+  const filled = Math.max(0, Math.min(totalCells, Math.round((value / 100) * totalCells)));
+  const cells = new Array(totalCells).fill(-1);
+  for (let k = 0; k < filled; k++) cells[k] = choiceIndex;
+  return cells;
+}
+
+/* ============================================================
+   RENDER — build card DOM, wire events, update on change.
+   ============================================================ */
+
+/**
+ * Build a grid of cells. Unfilled cells show a faint circle placeholder
+ * (via CSS ::before). Filled cells show the choice's emoji.
+ *
+ * opts.emojis: map of colorIndex -> emoji string. Combined grids pass
+ * all choice emojis; mini grids pass only that choice's emoji.
+ */
+function buildGrid(rows, cols, opts) {
+  const g = document.createElement('div');
+  g.className = 'grid';
+  // Tall-aspect grids (e.g., 20x1 vertical bars) get sized by height and
+  // filled from the bottom up (see renderCard). rowsPerCol is a convenient
+  // threshold: rows >= 3 × cols triggers the vertical-bar layout.
+  if (rows / cols >= 3) g.classList.add('tall');
+  g.style.setProperty('--aspect', `${cols} / ${rows}`);
+  g.style.setProperty('--cols', String(cols));
+  g.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+  g.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+  const total = rows * cols;
+  for (let i = 0; i < total; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.dataset.color = 'gray';
+    let html = '';
+    for (const ci of [0, 1, 2, 3]) {
+      const e = opts.emojis && opts.emojis[ci];
+      html += `<span class="emoji-${ci}">${e || ''}</span>`;
+    }
+    cell.innerHTML = html;
+    g.appendChild(cell);
+  }
+  return g;
+}
+
+function paintGrid(gridEl, cellColors) {
+  const cells = gridEl.children;
+  for (let i = 0; i < cells.length; i++) {
+    const c = cellColors[i];
+    cells[i].dataset.color = (c == null || c < 0) ? 'gray' : String(c);
+  }
+}
+
+function buildCard(preset) {
+  const rows = preset.gridRows || CONFIG.gridRows;
+  const cols = preset.gridCols || CONFIG.gridCols;
+  const n = preset.choices.length;
+
+  const section = document.createElement('section');
+  section.className = 'card';
+  section.id = `card-${preset.id}`;
+  section.dataset.id = preset.id;
+
+  // Question
+  const h = document.createElement('h2');
+  h.className = 'question';
+  h.textContent = preset.question;
+  section.appendChild(h);
+
+  // Grids row
+  const gridsRow = document.createElement('div');
+  gridsRow.className = 'grids-row';
+  section.appendChild(gridsRow);
+
+  // Build one .slot per possible slot (guess / actual / grownups) — we toggle display.
+  const slotDefs = [
+    { key: 'guess',    label: 'What you guessed' },
+    { key: 'actual',   label: 'Kids in this room' },
+    { key: 'grownups', label: 'Grown-ups in America' },
+  ];
+  const slotEls = {};
+  for (const def of slotDefs) {
+    const slot = document.createElement('div');
+    slot.className = 'slot';
+    slot.dataset.slot = def.key;
+
+    const gridWrap = document.createElement('div');
+    gridWrap.className = 'grid-wrap';
+
+    // For constrained: a single grid (all choice emojis available per cell)
+    // For unconstrained: a .multi-slot container with one mini grid per choice
+    const allEmojis = {};
+    for (const c of preset.choices) allEmojis[c.colorIndex] = c.emoji;
+    const combinedGrid = buildGrid(rows, cols, { emojis: allEmojis });
+
+    const multi = document.createElement('div');
+    multi.className = 'multi-slot';
+    multi.dataset.choices = String(n);
+    // Wide-aspect grids (e.g., 1x10 strips) look better stacked vertically
+    // so each strip spans the full slot width instead of getting 1/N.
+    if (cols / rows >= 3) multi.classList.add('stacked');
+    const miniGrids = [];
+    for (let i = 0; i < n; i++) {
+      const mini = document.createElement('div');
+      mini.className = 'mini';
+      const miniLabel = document.createElement('div');
+      miniLabel.className = 'mini-label';
+      miniLabel.textContent = `${preset.choices[i].emoji} ${preset.choices[i].label}`;
+      const singleEmoji = { [preset.choices[i].colorIndex]: preset.choices[i].emoji };
+      const g = buildGrid(rows, cols, { emojis: singleEmoji });
+      mini.appendChild(miniLabel);
+      mini.appendChild(g);
+      multi.appendChild(mini);
+      miniGrids.push(g);
+    }
+
+    gridWrap.appendChild(combinedGrid);
+    gridWrap.appendChild(multi);
+    slot.appendChild(gridWrap);
+
+    const lbl = document.createElement('div');
+    lbl.className = 'slot-label';
+    lbl.textContent = def.label;
+    slot.appendChild(lbl);
+
+    gridsRow.appendChild(slot);
+    slotEls[def.key] = { root: slot, combined: combinedGrid, multi, miniGrids };
+  }
+
+  // Placeholder slot — shown only when no real slot is checked for display.
+  // Reserves the vertical space and gives the operator a visual target for
+  // "blind" mode (set sliders, then tick a Show box to reveal).
+  const placeholderSlot = document.createElement('div');
+  placeholderSlot.className = 'slot single-grid placeholder-slot';
+  const pGridWrap = document.createElement('div');
+  pGridWrap.className = 'grid-wrap';
+  pGridWrap.appendChild(buildGrid(rows, cols, { emojis: {} }));
+  placeholderSlot.appendChild(pGridWrap);
+  gridsRow.appendChild(placeholderSlot);
+
+  // Controls
+  const controls = document.createElement('div');
+  controls.className = 'controls';
+
+  // Row 1: Edit slot (+ lock pill on the right)
+  const rowEdit = document.createElement('div');
+  rowEdit.className = 'controls-row';
+  rowEdit.innerHTML = '<span class="lbl">Edit</span>';
+  const editBtns = {};
+  for (const def of slotDefs) {
+    const b = document.createElement('button');
+    b.className = 'pill';
+    b.type = 'button';
+    b.textContent = def.label;
+    b.dataset.slot = def.key;
+    b.addEventListener('click', () => {
+      // Switching the active slot does NOT auto-show it — the operator
+      // can drag sliders invisibly, then tick "Show" for the reveal.
+      state[preset.id].activeSlot = def.key;
+      renderCard(preset);
+    });
+    rowEdit.appendChild(b);
+    editBtns[def.key] = b;
+  }
+
+  // Lock pill — floats right on the Edit row
+  const lockBtn = document.createElement('button');
+  lockBtn.className = 'pill lock';
+  lockBtn.type = 'button';
+  lockBtn.style.marginLeft = 'auto';
+  lockBtn.textContent = '🔒 sum to 100%';
+  lockBtn.addEventListener('click', () => {
+    const s = state[preset.id];
+    s.constrainTo100 = !s.constrainTo100;
+    if (s.constrainTo100) {
+      // Re-normalize the currently-active slot once so we're consistent.
+      const vals = s.values[s.activeSlot];
+      const sum = vals.reduce((a, b) => a + b, 0);
+      if (sum > 0) {
+        for (let i = 0; i < vals.length; i++) vals[i] = (vals[i] / sum) * 100;
+      }
+    }
+    renderCard(preset);
+  });
+  rowEdit.appendChild(lockBtn);
+  controls.appendChild(rowEdit);
+
+  // Row 2: Show checkboxes — any combination is allowed, including all off
+  // (useful for setting sliders blind, then revealing).
+  const rowShow = document.createElement('div');
+  rowShow.className = 'controls-row';
+  rowShow.innerHTML = '<span class="lbl">Show</span>';
+  const showChecks = {};
+  for (const def of slotDefs) {
+    const label = document.createElement('label');
+    label.className = 'check-pill';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.dataset.slot = def.key;
+    cb.addEventListener('change', () => {
+      const vis = new Set(state[preset.id].visibleSlots);
+      if (cb.checked) vis.add(def.key);
+      else vis.delete(def.key);
+      state[preset.id].visibleSlots = Array.from(vis);
+      renderCard(preset);
+    });
+    label.appendChild(cb);
+    label.appendChild(document.createTextNode(def.label));
+    rowShow.appendChild(label);
+    showChecks[def.key] = cb;
+  }
+  controls.appendChild(rowShow);
+
+  // Row 2: sliders (one per choice)
+  const sliders = document.createElement('div');
+  sliders.className = 'sliders';
+  const sliderEls = [];
+  for (let i = 0; i < n; i++) {
+    const choice = preset.choices[i];
+    const lab = document.createElement('div');
+    lab.className = 'choice-label';
+    const sw = document.createElement('span');
+    sw.className = `swatch sw-${choice.colorIndex}`;
+    lab.appendChild(sw);
+    lab.appendChild(document.createTextNode(`${choice.emoji} ${choice.label}`));
+
+    const input = document.createElement('input');
+    input.type = 'range';
+    input.min = '0';
+    input.max = '100';
+    input.step = '1';
+    input.value = '0';
+    input.dataset.index = String(i);
+    input.addEventListener('input', () => onSliderInput(preset, i, Number(input.value)));
+
+    sliders.appendChild(lab);
+    sliders.appendChild(input);
+    sliderEls.push(input);
+  }
+  controls.appendChild(sliders);
+
+  section.appendChild(controls);
+
+  return { section, slotEls, editBtns, showChecks, lockBtn, sliderEls, placeholderSlot };
+}
+
+/* ---- Slider -> state update ---- */
+
+let _sliderGuard = false;
+
+function onSliderInput(preset, index, newValue) {
+  if (_sliderGuard) return;
+  const s = state[preset.id];
+  const vals = s.values[s.activeSlot];
+
+  if (s.constrainTo100) {
+    const others = vals.map((v, i) => i === index ? 0 : v);
+    const otherSum = others.reduce((a, b) => a + b, 0);
+    const targetOther = 100 - newValue;
+    vals[index] = newValue;
+    if (otherSum <= 0) {
+      // distribute remainder equally
+      const each = targetOther / (vals.length - 1);
+      for (let i = 0; i < vals.length; i++) if (i !== index) vals[i] = each;
+    } else {
+      const scale = targetOther / otherSum;
+      for (let i = 0; i < vals.length; i++) if (i !== index) vals[i] = others[i] * scale;
+    }
+    // Sync the other sliders to the new values (without re-firing onSliderInput)
+    _sliderGuard = true;
+    const sliders = cardRefs[preset.id].sliderEls;
+    for (let i = 0; i < sliders.length; i++) {
+      if (i !== index) sliders[i].value = String(Math.round(vals[i]));
+    }
+    _sliderGuard = false;
+  } else {
+    vals[index] = newValue;
+  }
+  renderCard(preset);
+}
+
+/* ---- Render: sync DOM to state for one card ---- */
+
+const cardRefs = {};
+
+function renderCard(preset) {
+  const s = state[preset.id];
+  const refs = cardRefs[preset.id];
+  const rows = preset.gridRows || CONFIG.gridRows;
+  const cols = preset.gridCols || CONFIG.gridCols;
+  const total = rows * cols;
+
+  // Slot visibility + active indicator. When nothing is ticked, fall
+  // back to the placeholder slot so the vertical space stays reserved.
+  const anyVisible = s.visibleSlots.length > 0;
+  refs.placeholderSlot.style.display = anyVisible ? 'none' : '';
+  for (const key of ['guess', 'actual', 'grownups']) {
+    const visible = s.visibleSlots.includes(key);
+    refs.slotEls[key].root.style.display = visible ? '' : 'none';
+    refs.showChecks[key].checked = visible;
+    refs.editBtns[key].setAttribute('aria-pressed', String(s.activeSlot === key));
+  }
+
+  // Tall-aspect grids (vertical bars) fill from the bottom up. In the DOM
+  // the last child is the bottom cell, so we reverse the color array for
+  // these grids to make the "bar" grow upward.
+  const bottomUp = rows / cols >= 3;
+
+  // Mode: which grid flavor is shown per slot. Tag the slot so CSS can
+  // apply a tighter max-width only when showing a single combined grid.
+  for (const key of ['guess', 'actual', 'grownups']) {
+    const slotEl = refs.slotEls[key];
+    if (s.constrainTo100) {
+      slotEl.root.classList.add('single-grid');
+      slotEl.combined.style.display = '';
+      slotEl.multi.style.display = 'none';
+      const alloc = allocateConstrained(s.values[key], total);
+      const cellColors = new Array(total).fill(-1);
+      for (let i = 0; i < alloc.length; i++) {
+        cellColors[i] = alloc[i] < 0 ? -1 : preset.choices[alloc[i]].colorIndex;
+      }
+      paintGrid(slotEl.combined, bottomUp ? cellColors.slice().reverse() : cellColors);
+    } else {
+      slotEl.root.classList.remove('single-grid');
+      slotEl.combined.style.display = 'none';
+      slotEl.multi.style.display = '';
+      for (let i = 0; i < preset.choices.length; i++) {
+        const alloc = allocateSingle(s.values[key][i], preset.choices[i].colorIndex, total);
+        paintGrid(slotEl.miniGrids[i], bottomUp ? alloc.slice().reverse() : alloc);
+      }
+    }
+  }
+
+  // Lock pill state
+  refs.lockBtn.setAttribute('aria-pressed', String(s.constrainTo100));
+  refs.lockBtn.textContent = s.constrainTo100 ? '🔒 sum to 100%' : '🔓 independent';
+
+  // Sliders reflect active slot values (used when switching slots)
+  const activeVals = s.values[s.activeSlot];
+  _sliderGuard = true;
+  for (let i = 0; i < refs.sliderEls.length; i++) {
+    const rounded = Math.round(activeVals[i]);
+    if (Number(refs.sliderEls[i].value) !== rounded) refs.sliderEls[i].value = String(rounded);
+  }
+  _sliderGuard = false;
+}
+
+/* ============================================================
+   INTRO CARD — static content (no state, no sliders). Shown first.
+   Edit the employers list or the title here.
+   ============================================================ */
+
+const INTRO = {
+  photoSrc: './joey.png',     // local file in this directory
+  photoAlt: 'Portrait',
+  hello: "Hi, I'm",
+  name: 'Joey',
+  title: 'Data Scientist',
+  // Decorative math-y symbols shown below the name. Each element picks
+  // a color from the palette (c1..c4), a font-size in em, and a rotation.
+  // Edit freely — purely decorative, no semantics.
+  decor: [
+    { symbol: 'π', color: 'c1', rotate: -6, size: 3.2 },
+    { symbol: '+', color: 'c2', rotate:  4, size: 2.6 },
+    { symbol: '√', color: 'c3', rotate: -3, size: 2.9 },
+    { symbol: 'Σ', color: 'c4', rotate:  5, size: 3.1 },
+    { symbol: '=', color: 'c1', rotate: -1, size: 2.4 },
+    { symbol: '∞', color: 'c2', rotate: -4, size: 3.0 },
+    { symbol: '×', color: 'c3', rotate:  3, size: 2.5 },
+    { symbol: 'θ', color: 'c4', rotate: -2, size: 2.8 },
+    { symbol: 'Δ', color: 'c1', rotate:  6, size: 2.9 },
+    { symbol: '½', color: 'c2', rotate: -3, size: 2.4 },
+  ],
+};
+
+function buildIntroCard() {
+  const section = document.createElement('section');
+  section.className = 'card intro-card';
+  section.id = 'card-intro';
+
+  const top = document.createElement('div');
+  top.className = 'intro-top';
+
+  const img = document.createElement('img');
+  img.className = 'intro-photo';
+  img.src = INTRO.photoSrc;
+  img.alt = INTRO.photoAlt;
+  top.appendChild(img);
+
+  const text = document.createElement('div');
+  text.className = 'intro-text';
+  text.innerHTML = `
+    <p class="intro-hello">${INTRO.hello}</p>
+    <h1 class="intro-name">${INTRO.name}</h1>
+    <p class="intro-title">${INTRO.title}</p>
+  `;
+  top.appendChild(text);
+  section.appendChild(top);
+
+  const decor = document.createElement('div');
+  decor.className = 'math-decor';
+  decor.setAttribute('aria-hidden', 'true');
+  for (const d of INTRO.decor) {
+    const el = document.createElement('span');
+    el.className = 'math-decor-item';
+    el.textContent = d.symbol;
+    el.style.color = `var(--${d.color})`;
+    el.style.fontSize = `${d.size}em`;
+    el.style.transform = `rotate(${d.rotate}deg)`;
+    decor.appendChild(el);
+  }
+  section.appendChild(decor);
+
+  return section;
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+
+function init() {
+  const main = document.getElementById('cards');
+  main.appendChild(buildIntroCard());
+  for (const p of PRESETS) {
+    state[p.id] = makeInitialState(p);
+    const refs = buildCard(p);
+    cardRefs[p.id] = refs;
+    main.appendChild(refs.section);
+    renderCard(p);
+  }
+
+  document.getElementById('reset-all').addEventListener('click', () => {
+    resetAllState();
+    for (const p of PRESETS) renderCard(p);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  // Global keys
+  window.addEventListener('keydown', (e) => {
+    // Ignore when typing in an input
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+    if (e.key === 'p' || e.key === 'P') {
+      const p = currentPreset();
+      document.body.classList.toggle('presenting');
+      // Layout shifts when the header appears/disappears; re-snap to the
+      // card that was in view so the question doesn't end up half off-screen.
+      if (p) cardRefs[p.id].section.scrollIntoView({ behavior: 'instant', block: 'start' });
+      e.preventDefault();
+    } else if (e.key === 'Escape') {
+      if (document.body.classList.contains('presenting')) {
+        const p = currentPreset();
+        document.body.classList.remove('presenting');
+        if (p) cardRefs[p.id].section.scrollIntoView({ behavior: 'instant', block: 'start' });
+      }
+    } else if (e.key === 'g' || e.key === 'G') {
+      // Toggle grown-ups visibility on the card currently in view.
+      // Empty visibleSlots is a valid state (blind mode).
+      const p = currentPreset();
+      if (p) {
+        const vis = new Set(state[p.id].visibleSlots);
+        if (vis.has('grownups')) vis.delete('grownups');
+        else vis.add('grownups');
+        state[p.id].visibleSlots = Array.from(vis);
+        renderCard(p);
+      }
+      e.preventDefault();
+    }
+  });
+}
+
+function currentPreset() {
+  // Find the card whose top is closest to the top of the viewport
+  let best = null;
+  let bestDist = Infinity;
+  for (const p of PRESETS) {
+    const el = cardRefs[p.id].section;
+    const rect = el.getBoundingClientRect();
+    const dist = Math.abs(rect.top);
+    if (dist < bestDist) { bestDist = dist; best = p; }
+  }
+  return best;
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
