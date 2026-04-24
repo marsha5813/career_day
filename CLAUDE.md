@@ -42,6 +42,9 @@ Hit the **Reset All** button in the top-right of the operator bar. This clears t
 - `/Users/joey/dev/career_day/joey.png` — portrait photo used on the intro card
 - `/Users/joey/dev/career_day/career-day-app-spec.md` — original spec
 - `/Users/joey/dev/career_day/CLAUDE.md` — this doc
+- `/Users/joey/dev/career_day/.gitignore`
+
+Directory is a git repo with origin at **https://github.com/marsha5813/career_day** (public). Default branch `main`. Push with plain `git push` (auth is handled by your gh/credential helper; no token is embedded in the remote URL).
 
 No build step, no `npm install`, no server required at runtime. Inline CSS and inline vanilla JS, no frameworks. Emojis and math symbols (π, Σ, ∞, etc.) are native Unicode. The only local asset is `joey.png`, loaded via relative path — it works fine when opened via `file://`.
 
@@ -108,7 +111,15 @@ Two display modes per slot, driven by the 🔒 toggle:
 - **Constrained (sum to 100%)**: one combined grid per slot. Cell allocation uses largest-remainder rounding so the visible cell counts always sum to exactly 100. Contiguous fill, starting with choice 0.
 - **Unconstrained (independent)**: one small grid per choice per slot ("small multiples"). Each choice's slider independently controls how many cells in that choice's mini grid are filled. Used for select-all questions.
 
-When no slots are visible (all Show boxes unticked), a dedicated placeholder-only grid appears in the slot row so the card's vertical height stays consistent. This supports Joey's "set sliders blind, then tick to reveal" workflow.
+**Grid shape auto-adapts based on each card's `gridRows` × `gridCols`:**
+
+- Square-ish grids (e.g., default 10×10 or any aspect between 1:3 and 3:1) → the existing layout: single combined grid OR side-by-side square mini grids.
+- Tall-aspect grids where `rows / cols >= 3` (e.g., pets uses 20×1) → **vertical bar mode**. The grid gets a `.tall` CSS class that sizes it by height (55vh) instead of width, and `renderCard` reverses the cell-color array so the bar **fills from the bottom up**. Three vertical bars sit side-by-side inside each slot by default, which gives a clean "bar chart" reading for select-all questions. Pets is the only card currently using this — see its preset for the pattern.
+- Wide-aspect grids where `cols / rows >= 3` (e.g., a hypothetical 1×10 horizontal strip) → the multi-slot container gets a `.stacked` class that stacks minis vertically inside the slot instead of laying them side-by-side. Not currently used but the CSS/JS is in place.
+
+When no slots are visible (all Show boxes unticked), a dedicated placeholder-only grid appears in the slot row so the card's vertical height stays consistent. This supports Joey's **"blind reveal" workflow**: untick all three Show boxes, drag sliders while kids see only faint placeholders, then tick a Show box for a dramatic reveal. The Edit pill does NOT auto-show the slot being edited, intentionally, so you can edit while hidden.
+
+Controls are split into two rows for clarity: Edit pills (+ lock) on top, Show checkboxes below.
 
 Cells never get re-created on slider change. Each cell pre-renders all four possible emoji variants plus a CSS `::before` placeholder circle; `data-color` on the cell (set by `paintGrid`) controls which variant is visible via CSS selectors. This keeps updates well under 300ms even for 12 simultaneously-visible grids.
 
@@ -123,14 +134,15 @@ Cells never get re-created on slider change. Each cell pre-renders all four poss
 - **No guard forcing "at least one slot visible."** Joey deliberately wants blind mode for dramatic reveals — drag sliders invisibly, then tick a Show box to reveal.
 - **Scroll-snap one-card-per-screen.** Keeps the presentation focused on the current question; advancing is a single keystroke with no click targets.
 - **Presentation mode (`P` key) hides controls.** Same file, same window — no separate presenter window to drag to the projector.
-- **Reset All preserves grown-ups data.** Grown-ups values are reference data (from Pew / Verasight), not kid-entered, so clearing them between sessions would force re-entry.
+- **Reset All preserves grown-ups data.** Grown-ups values are reference data (from real polling sources), not kid-entered, so clearing them between sessions would force re-entry.
+- **Pets uses 20×1 vertical bars, not a 10×10 grid.** The card has 3 choices (dog/cat/fish) × up to 2 visible slots = 6 grids on screen at once. Square grids were too big to fit; 20×1 vertical bars pack cleanly and give 5% resolution (needed so 3% AVMA fish data still shows ≥1 cell). Bars grow bottom-up to read as classic bar charts. This is NOT a "bar chart" in the spec's banned sense — cells are still countable discrete icons, not continuous lengths.
 
 ---
 
 ## Non-negotiables from the spec (don't break these)
 
 - No numbers, no percentages, no axis labels visible to the audience. The ratio of colored cells *is* the data.
-- No bar charts.
+- No bar charts (in the sense of continuous-length bars). Countable discrete icons — including vertical stacks of icons, like pets uses — are fine because kids can still count them ("4 out of 20 adults have dogs").
 - No animations longer than ~300ms.
 - Must work offline. No external resources, no CDNs, no fonts, no icon libraries.
 - Must be readable from ~15 ft away on a projected screen.
@@ -185,7 +197,6 @@ lsof -ti:8765 | xargs kill
 
 ## Future work / known rough edges
 
-- Grown-ups data is all **placeholder**. Search for `PLACEHOLDER` in `index.html` to find each one; replace with real Pew / Verasight figures before the day.
+- **Pets grown-ups data is real** (43 / 33 / 3 from AVMA). The other three cards still have `// PLACEHOLDER` grown-ups figures — search `PLACEHOLDER` in `index.html` to find them, swap in real polling data when you have it.
 - The "Would you rather" question is a placeholder (dragon vs. unicorn). Swap in whatever final question you choose.
-- Small-multiples layout (unconstrained cards with 3 choices) has some vertical whitespace. Legible and presentable, but could be tightened if it bugs you.
 - Controls are visible to kids in the default (non-presenting) view. Hit `P` for a clean look; there's no dual-monitor setup.
