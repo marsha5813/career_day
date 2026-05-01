@@ -42,6 +42,7 @@ Hit the **Reset All** button in the top-right of the operator bar. This clears t
 - `/Users/joey/dev/career_day/joey.png` — portrait photo used on the intro card
 - `/Users/joey/dev/career_day/career-day-app-spec.md` — original spec
 - `/Users/joey/dev/career_day/CLAUDE.md` — this doc
+- `/Users/joey/dev/career_day/NEXT_YEAR.md` — reflections + to-dos for next year's event
 - `/Users/joey/dev/career_day/.gitignore`
 
 Directory is a git repo with origin at **https://github.com/marsha5813/career_day** (public). Default branch `main`. Push with plain `git push` (auth is handled by your gh/credential helper; no token is embedded in the remote URL).
